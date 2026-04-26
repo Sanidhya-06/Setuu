@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:setu_ngo/core/theme/app_theme.dart';
-
+import 'signup_screen.dart';
+import 'login_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -177,11 +178,11 @@ class WelcomeScreen extends StatelessWidget {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      // TODO: Replace with Navigator.push to SignupStep1Screen
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Sign up coming soon!')),
+                      Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SignupScreen()),
                       );
-                    },
+                      },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primaryColor,
                       foregroundColor: Colors.white,
@@ -214,11 +215,11 @@ class WelcomeScreen extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
-                    onPressed: () {
-                      // TODO: Replace with Navigator.push to LoginScreen
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Login coming soon!')),
-                      );
+                   onPressed: () {
+                    Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                     );
                     },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppTheme.primaryColor,
