@@ -1,8 +1,21 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import '../../forms/screens/forms_list.dart';
 
 void main() {
-  runApp(const DashboardScreen());
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: const DashboardScreen(),
+    );
+  }
 }
 
 class DashboardScreen extends StatelessWidget {
@@ -38,7 +51,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     DashboardPage(),
     CampaignsPage(),
     DataPage(),
-    FormsPage(),
+    FormsListScreen(),
     ProfilePage(),
   ];
 
@@ -739,16 +752,26 @@ class CampaignsPage extends StatelessWidget {
 
 class DataPage extends StatelessWidget {
   const DataPage({super.key});
-  @override
-  Widget build(BuildContext context) =>
-      const _PlaceholderPage(title: 'Data', icon: Icons.cloud_upload_rounded, color: Color(0xFF2ECC71));
-}
 
-class FormsPage extends StatelessWidget {
-  const FormsPage({super.key});
   @override
-  Widget build(BuildContext context) =>
-      const _PlaceholderPage(title: 'Forms', icon: Icons.assignment_rounded, color: Color(0xFF1E90FF));
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Data")),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => FormsListScreen(),
+              ),
+            );
+          },
+          child: Text("Go to Forms"),
+        ),
+      ),
+    );
+  }
 }
 
 class ProfilePage extends StatelessWidget {
