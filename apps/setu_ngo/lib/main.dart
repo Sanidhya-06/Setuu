@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 
@@ -26,6 +27,23 @@ void main() async {
       child: const MyApp(),
     ),
   );
+=======
+import 'package:provider/provider.dart';
+import 'package:setu_ngo/features/forms/form_controller.dart';
+import 'package:setu_ngo/features/dashboard/screens/dashboard_screen.dart';
+
+void main() {
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => FormController(),
+        ),
+      ],
+      child: const MyApp(),
+    ),
+  );
+>>>>>>> 1950b9be625186982b3281cf2dd1322f4348e535
 }
 
 class MyApp extends StatelessWidget {
@@ -34,10 +52,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'NGO Connect',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      home: const WelcomeScreen(),
+      home: const DashboardScreen(),
     );
   }
 }
