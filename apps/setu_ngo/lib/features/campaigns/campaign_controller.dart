@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../core/services/ngo_stats_service.dart'; 
 
-// ── Data Models ───────────────────────────────────────────────────────────────
+// ── Data Model ───────────────────────────────────────────────────────────────
 
 class Campaign {
   final String id;
@@ -12,7 +14,7 @@ class Campaign {
   final String date;
   final String time;
   final String imageUrl;
-  final String badge; // 'Active' | 'Upcoming' | 'Completed'
+  final String badge;
   final Color badgeColor;
   final int joinedCount;
   final int maxVolunteers;
@@ -92,60 +94,24 @@ class Campaign {
     switch (status) {
       case 'Active':
         return const Color(0xFF22C55E);
-      case 'Upcoming':
-        return const Color(0xFF5A4EFF);
       case 'Completed':
         return const Color(0xFF9CA3AF);
       default:
         return const Color(0xFF5A4EFF);
     }
   }
-
-  Campaign copyWith({
-    String? badge,
-    Color? badgeColor,
-    int? joinedCount,
-    int? maxVolunteers,
-  }) {
-    return Campaign(
-      id: id,
-      title: title,
-      description: description,
-      location: location,
-      state: state,
-      date: date,
-      time: time,
-      imageUrl: imageUrl,
-      badge: badge ?? this.badge,
-      badgeColor: badgeColor ?? this.badgeColor,
-      joinedCount: joinedCount ?? this.joinedCount,
-      maxVolunteers: maxVolunteers ?? this.maxVolunteers,
-      volunteerAvatars: volunteerAvatars,
-      category: category,
-      organizerId: organizerId,
-    );
-  }
 }
 
-// ── Controller ────────────────────────────────────────────────────────────────
+// ── Controller ───────────────────────────────────────────────────────────────
 
 class CampaignController extends ChangeNotifier {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // State
-  String _selectedTab = 'All Campaigns'; // All Campaigns | Active | Upcoming | Completed
-  String _searchQuery = '';
-  bool _loading = false;
-  String? _error;
-  List<Campaign> _campaigns = [];
-  int _notificationCount = 3;
+  // ── UI STATE ─────────────────────────────────────────────────────────────
 
-  // Getters
-  String get selectedTab => _selectedTab;
-  String get searchQuery => _searchQuery;
-  bool get loading => _loading;
-  String? get error => _error;
-  int get notificationCount => _notificationCount;
+  String _selectedTab = 'All Campaigns';
+  String _searchQuery = '';
+  int _notificationCount = 3;
 
   final List<String> tabs = [
     'All Campaigns',
@@ -154,49 +120,81 @@ class CampaignController extends ChangeNotifier {
     'Completed',
   ];
 
+  String get selectedTab => _selectedTab;
+  String get searchQuery => _searchQuery;
+  int get notificationCount => _notificationCount;
+
+  // ── DATA STATE ───────────────────────────────────────────────────────────
+
+  List<Campaign> _campaigns = [];
+  bool _loading = false;
+  String? _error;
+
+  List<Campaign> get campaigns => _campaigns;
+  bool get loading => _loading;
+  String? get error => _error;
+
+  // ── FILTERED LIST ────────────────────────────────────────────────────────
+
   List<Campaign> get filteredCampaigns {
     return _campaigns.where((c) {
-      final matchesTab = _selectedTab == 'All Campaigns' || c.badge == _selectedTab;
+      final matchesTab =
+          _selectedTab == 'All Campaigns' || c.badge == _selectedTab;
+
       final matchesSearch = _searchQuery.isEmpty ||
           c.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          c.location.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          c.description.toLowerCase().contains(_searchQuery.toLowerCase());
+          c.location.toLowerCase().contains(_searchQuery.toLowerCase());
+
       return matchesTab && matchesSearch;
     }).toList();
   }
 
-  int get totalCampaigns => _campaigns.length;
-
-  // ── Firebase ──────────────────────────────────────────────────────────────
+  // ── FETCH ────────────────────────────────────────────────────────────────
 
   Future<void> fetchCampaigns() async {
     _loading = true;
-    _error = null;
     notifyListeners();
 
     try {
+      final uid = FirebaseAuth.instance.currentUser!.uid;
+
       final snap = await _db
           .collection('campaigns')
+          .where('ngoId', isEqualTo: uid)
           .orderBy('createdAt', descending: true)
           .get();
+
       _campaigns = snap.docs.map((d) => Campaign.fromFirestore(d)).toList();
     } catch (e) {
-      _error = 'Failed to load campaigns. Please try again.';
+      _error = 'Failed to load campaigns';
     } finally {
       _loading = false;
       notifyListeners();
     }
   }
 
+  // ── CREATE ───────────────────────────────────────────────────────────────
+
   Future<bool> createCampaign(Campaign campaign) async {
     try {
-      await _db.collection('campaigns').add(campaign.toFirestore());
+      final uid = FirebaseAuth.instance.currentUser!.uid;
+
+      await _db.collection('campaigns').add({
+        ...campaign.toFirestore(),
+        'ngoId': uid, // 🔥 critical
+      });
+
+      await NgoStatsService().updateStats(uid);
       await fetchCampaigns();
+
       return true;
     } catch (e) {
+      print("Create error: $e");
       return false;
     }
   }
+
+  // ── UPDATE STATUS ─────────────────────────────────────────────────────────
 
   Future<bool> updateCampaignStatus(String id, String newStatus) async {
     try {
@@ -208,32 +206,36 @@ class CampaignController extends ChangeNotifier {
                 ? '#9CA3AF'
                 : '#5A4EFF',
       });
-      final idx = _campaigns.indexWhere((c) => c.id == id);
-      if (idx != -1) {
-        _campaigns[idx] = _campaigns[idx].copyWith(
-          badge: newStatus,
-          badgeColor: Campaign.badgeColorForStatus(newStatus),
-        );
-        notifyListeners();
-      }
+
+      final uid = FirebaseAuth.instance.currentUser!.uid;
+
+      await NgoStatsService().updateStats(uid);
+      await fetchCampaigns();
+
       return true;
     } catch (e) {
       return false;
     }
   }
+
+  // ── DELETE ───────────────────────────────────────────────────────────────
 
   Future<bool> deleteCampaign(String id) async {
     try {
       await _db.collection('campaigns').doc(id).delete();
-      _campaigns.removeWhere((c) => c.id == id);
-      notifyListeners();
+
+      final uid = FirebaseAuth.instance.currentUser!.uid;
+
+      await NgoStatsService().updateStats(uid);
+      await fetchCampaigns();
+
       return true;
     } catch (e) {
       return false;
     }
   }
 
-  // ── Actions ───────────────────────────────────────────────────────────────
+  // ── UI ACTIONS ───────────────────────────────────────────────────────────
 
   void setTab(String tab) {
     _selectedTab = tab;

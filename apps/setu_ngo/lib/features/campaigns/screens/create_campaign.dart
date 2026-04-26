@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../campaign_controller.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CreateCampaignScreen extends StatefulWidget {
   final CampaignController controller;
@@ -119,7 +120,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
       maxVolunteers: int.tryParse(_maxVolunteersCtrl.text) ?? 50,
       volunteerAvatars: [],
       category: _selectedCategory,
-      organizerId: 'current_user_id', // Replace with actual auth user ID
+      organizerId: FirebaseAuth.instance.currentUser!.uid, // Replace with actual auth user ID
     );
 
     final success = await widget.controller.createCampaign(campaign);
