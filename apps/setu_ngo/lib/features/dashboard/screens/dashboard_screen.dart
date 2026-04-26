@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:setu_ngo/features/campaigns/screens/campaign_list.dart';
 import 'dart:math' as math;
 import '../../forms/screens/forms_list.dart';
 
@@ -743,16 +744,24 @@ class _CampaignCard extends StatelessWidget {
 
 // ─── Placeholder Pages ────────────────────────────────────────────────────────
 
-class CampaignsPage extends StatelessWidget {
-  const CampaignsPage({super.key});
-  @override
-  Widget build(BuildContext context) =>
-      const _PlaceholderPage(title: 'Campaigns', icon: Icons.campaign_rounded, color: Color(0xFF6C63FF));
-}
+
 
 class DataPage extends StatelessWidget {
   const DataPage({super.key});
 
+class CampaignsPage extends StatelessWidget {
+  const CampaignsPage({super.key});
+
+  class DataPage extends StatelessWidget {
+  const DataPage({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return const CampaignListScreen();
+  }
+}
+
+class FormsPage extends StatelessWidget {
+  const FormsPage({super.key});
   @override
   Widget build(BuildContext context) {
     return Scaffold(
