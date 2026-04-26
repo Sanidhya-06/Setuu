@@ -746,20 +746,29 @@ class _CampaignCard extends StatelessWidget {
 
 
 
-class DataPage extends StatelessWidget {
-  const DataPage({super.key});
+
 
 class CampaignsPage extends StatelessWidget {
   const CampaignsPage({super.key});
 
-  class DataPage extends StatelessWidget {
-  const DataPage({super.key});
   @override
   Widget build(BuildContext context) {
     return const CampaignListScreen();
   }
 }
 
+class DataPage extends StatelessWidget {
+  const DataPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Text("Data Page"),
+      ),
+    );
+  }
+}
 class FormsPage extends StatelessWidget {
   const FormsPage({super.key});
   @override
