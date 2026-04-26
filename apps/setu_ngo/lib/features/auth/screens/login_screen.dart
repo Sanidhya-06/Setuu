@@ -3,6 +3,11 @@ import 'package:provider/provider.dart';
 import '../auth_controller.dart';
 import '../widgets/input_field.dart';
 import '../widgets/auth_button.dart';
+import '../../dashboard/screens/dashboard_screen.dart';
+import 'package:provider/provider.dart';
+import '../../dashboard/dashboard_controller.dart';
+import '../../dashboard/screens/dashboard_screen.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,12 +24,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final success = await controller.login();
 
-    if (success && mounted) {
-      // Replace '/home' with your existing post-login route name
-      Navigator.of(context).pushReplacementNamed('/home');
-    }
-  }
-
+   if (success && mounted) {
+  Navigator.of(context).pushReplacement(
+    MaterialPageRoute(
+      builder: (context) => DashboardScreen(),
+    ),
+  );
+}}
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(

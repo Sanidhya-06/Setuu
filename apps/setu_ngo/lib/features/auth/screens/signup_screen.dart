@@ -12,6 +12,7 @@ import 'signup_step1_screen.dart';
 import 'signup_step2_screen.dart';
 import 'signup_step3_screen.dart';
 import 'signup_step4_screen.dart';
+import 'login_screen.dart';
 
 class SignupScreen extends StatelessWidget {
   const SignupScreen({super.key});
@@ -93,14 +94,16 @@ class _SuccessScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 14, color: kTextGrey, height: 1.5)),
               const SizedBox(height: 48),
 
-              PrimaryButton(
-                label: 'Back to Login',
-                showArrow: false,
-                onTap: () {
-                  // Pop back to login or replace with login route
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                },
-              ),
+           PrimaryButton(
+                  label: 'Back to Login',
+                  showArrow: false,
+                  onTap: () {
+                  Navigator.of(context).pushAndRemoveUntil(
+                 MaterialPageRoute(builder: (_) => LoginScreen()),
+                 (route) => false,
+        );
+         },
+ ), 
             ],
           ),
         ),
