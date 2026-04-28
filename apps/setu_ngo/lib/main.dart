@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+<<<<<<< HEAD
 
 import 'firebase_options.dart';
 import 'package:setu_ngo/core/theme/app_theme.dart';
@@ -21,6 +22,19 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+=======
+import 'package:firebase_core/firebase_core.dart';          // ← ADD
+import 'package:setu_ngo/features/forms/form_controller.dart';
+import 'package:setu_ngo/features/dashboard/screens/dashboard_screen.dart';
+import 'firebase_options.dart';                             // ← ADD
+
+void main() async {                                         // ← ADD async
+  WidgetsFlutterBinding.ensureInitialized();                // ← ADD
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+>>>>>>> f1522c9 (upload screen+  firebase + analytics)
   runApp(
     MultiProvider(
       providers: [

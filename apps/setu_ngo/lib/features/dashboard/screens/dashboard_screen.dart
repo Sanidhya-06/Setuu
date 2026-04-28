@@ -1,9 +1,16 @@
 // apps/setu_ngo/lib/features/dashboard/screens/dashboard_screen.dart
 
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
 import 'package:provider/provider.dart';
 import '../core/providers/dashboard_provider.dart';
 import '../presentation/dashboard/dashboard_widgets.dart';
+=======
+import 'package:setu_ngo/features/campaigns/screens/campaign_list.dart';
+import 'dart:math' as math;
+import '../../forms/screens/forms_list.dart';
+import 'package:setu_ngo/features/data/screens/data_screen.dart';
+>>>>>>> f1522c9 (upload screen+  firebase + analytics)
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -21,6 +28,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context.read<DashboardProvider>().load();
     });
   }
+<<<<<<< HEAD
+=======
+}
+
+// ─── Main Scaffold with Bottom Navigation ────────────────────────────────────
+
+class MainScaffold extends StatefulWidget {
+  const MainScaffold({super.key});
+
+  @override
+  State<MainScaffold> createState() => _MainScaffoldState();
+}
+
+class _MainScaffoldState extends State<MainScaffold> {
+  int _currentIndex = 0;
+
+  final List<Widget> _pages = const [
+    DashboardPage(),
+    CampaignsPage(),
+    DataScreen(),
+    FormsListScreen(),
+    ProfilePage(),
+  ];
+>>>>>>> f1522c9 (upload screen+  firebase + analytics)
 
   @override
   Widget build(BuildContext context) {

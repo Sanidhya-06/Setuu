@@ -31,15 +31,19 @@ dependencies:
   flutter:
     sdk: flutter
 
+  file_picker: ^8.0.0
+  excel: ^2.1.0
+  cloud_firestore: ^6.3.0
+
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   firebase_core: ^4.7.0
-  cloud_firestore: ^6.3.0
   firebase_auth: ^6.4.0
   geocoding: ^3.0.0
   geolocator: ^11.0.0
   provider: ^6.1.2
+<<<<<<< HEAD
   file_picker: ^8.0.0
   go_router: ^13.0.0
   shared_preferences: ^2.2.2
@@ -48,6 +52,9 @@ dependencies:
   http: ^1.2.0
   firebase_storage: ^13.3.0
   riverpod_annotation: ^4.0.2
+=======
+  
+>>>>>>> f1522c9 (upload screen+  firebase + analytics)
 
 dev_dependencies:
   flutter_test:
@@ -105,3 +112,4 @@ flutter:
   
   assets:
     - assets/image/welcome.jpg
+   

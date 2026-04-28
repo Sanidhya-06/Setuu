@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "121707566477",
-    "project_id": "setuu-9ce39",
-    "storage_bucket": "setuu-9ce39.firebasestorage.app"
+    "project_number": "824724579404",
+    "project_id": "my-awesome-03",
+    "storage_bucket": "my-awesome-03.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:121707566477:android:defb201a40a58d5b7299c4",
+        "mobilesdk_app_id": "1:824724579404:android:fa8ac4919c08a5939980e9",
         "android_client_info": {
           "package_name": "com.example.setu_ngo"
         }
@@ -15,26 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBM3WiKKdRQelp-bm-igdQrI_rO7sGq-EM"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:121707566477:android:bd897eda1a6291577299c4",
-        "android_client_info": {
-          "package_name": "com.example.setu_partners"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyBM3WiKKdRQelp-bm-igdQrI_rO7sGq-EM"
+          "current_key": "AIzaSyAyx1SzL5YBmGCPHYLIqVPg6attdwkYfE4"
         }
       ],
       "services": {
