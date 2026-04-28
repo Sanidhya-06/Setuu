@@ -2,12 +2,14 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../dashboard/presentation/dashboard/dashboard_screen.dart';
 import '../../campaigns/screens/campaign_list.dart';
 import '../../data/screens/data_screen.dart';
 import '../../forms/screens/forms_list.dart';
 import '../../profile/screens/ngo_profile.dart';
+import '../../auth/screens/welcome_screen.dart';
 
 // ── Colour tokens ─────────────────────────────────────────────────────────────
 const kPrimary  = Color(0xFF6C5CE7);
@@ -15,6 +17,66 @@ const kBg       = Color(0xFFF5F5FA);
 const kTextDark = Color(0xFF1A1A2E);
 const kTextGrey = Color(0xFF9E9E9E);
 
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AuthState
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Lightweight auth notifier. Replace [login] / [logout] bodies with your
+/// real auth logic (SharedPreferences token, Firebase Auth, Riverpod, etc.).
+class AuthState extends ChangeNotifier {
+  bool _loggedIn = false;
+
+  bool get isLoggedIn => _loggedIn;
+
+  Future<void> login() async {
+    _loggedIn = true;
+    notifyListeners();
+  }
+
+  Future<void> logout() async {
+    _loggedIn = false;
+    notifyListeners();
+  }
+}
+
+/// App-level singleton. Replace with your DI layer (GetIt, Riverpod, etc.)
+/// if you already manage state globally.
+final authState = AuthState();
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AuthWrapper
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Set this as `home:` in [MaterialApp]. Listens to [authState] and
+/// automatically swaps between [WelcomeScreen] and [MainNavigationScreen].
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        // Still connecting
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        // User is logged in
+        if (snapshot.hasData) {
+          return const MainNavigationScreen();
+        }
+
+        // Not logged in
+        return const WelcomeScreen();
+      },
+    );
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // MainNavigationScreen
@@ -30,36 +92,37 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
 
-  /// Exposed so child screens can jump to a tab without go_router.
   void switchTab(int index) {
     if (index == _currentIndex) return;
     HapticFeedback.selectionClick();
     setState(() => _currentIndex = index);
   }
 
-  /// Screens are built lazily here so we can pass [switchTab] to the
-  /// dashboard without needing a router or InheritedWidget.
+  Future<void> _handleLogout() async {
+    await authState.logout();
+    // AuthWrapper listens and swaps to WelcomeScreen automatically.
+  }
+
   late final List<Widget> _screens = [
-    DashboardScreen(onTabSwitch: switchTab), // tab 0
-    const CampaignListScreen(),              // tab 1
-    const DataScreen(),                      // tab 2
-    const FormsListScreen(),                 // tab 3
-    const NgoProfileScreen(),               // tab 4
+    DashboardScreen(onTabSwitch: switchTab),   // tab 0
+    const CampaignListScreen(),                // tab 1
+    const DataScreen(),                        // tab 2
+    const FormsListScreen(),                   // tab 3
+    NgoProfileScreen(onLogout: _handleLogout), // tab 4
   ];
 
   static const _navItems = [
-    _NavItemData(icon: Icons.home_rounded,         activeIcon: Icons.home_rounded,         label: 'Dashboard'),
-    _NavItemData(icon: Icons.campaign_outlined,    activeIcon: Icons.campaign_rounded,     label: 'Campaigns'),
-    _NavItemData(icon: Icons.cloud_upload_outlined,activeIcon: Icons.cloud_upload_rounded, label: 'Data'),
-    _NavItemData(icon: Icons.assignment_outlined,  activeIcon: Icons.assignment_rounded,   label: 'Forms'),
-    _NavItemData(icon: Icons.person_outline,       activeIcon: Icons.person_rounded,       label: 'Profile'),
+    _NavItemData(icon: Icons.home_rounded,          activeIcon: Icons.home_rounded,         label: 'Dashboard'),
+    _NavItemData(icon: Icons.campaign_outlined,     activeIcon: Icons.campaign_rounded,     label: 'Campaigns'),
+    _NavItemData(icon: Icons.cloud_upload_outlined, activeIcon: Icons.cloud_upload_rounded, label: 'Data'),
+    _NavItemData(icon: Icons.assignment_outlined,   activeIcon: Icons.assignment_rounded,   label: 'Forms'),
+    _NavItemData(icon: Icons.person_outline,        activeIcon: Icons.person_rounded,       label: 'Profile'),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBg,
-      // IndexedStack keeps all tabs alive — state is preserved when switching
       body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: _CustomBottomNav(
         currentIndex: _currentIndex,

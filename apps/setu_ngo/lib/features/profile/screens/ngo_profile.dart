@@ -5,7 +5,12 @@ import '../widgets/profile_header_widget.dart';
 import '../widgets/organization_info_sheet.dart';
 
 class NgoProfileScreen extends StatefulWidget {
-  const NgoProfileScreen({super.key});
+  /// Called after the user confirms logout and [ProfileService.logout] succeeds.
+  /// The parent ([MainNavigationScreen]) delegates this to [AuthState.logout],
+  /// which causes [AuthWrapper] to swap to [WelcomeScreen] automatically.
+  final Future<void> Function() onLogout;
+
+  const NgoProfileScreen({super.key, required this.onLogout});
 
   @override
   State<NgoProfileScreen> createState() => _NgoProfileScreenState();
@@ -77,10 +82,9 @@ class _NgoProfileScreenState extends State<NgoProfileScreen> {
     if (confirmed != true || !mounted) return;
 
     try {
-      await _profileService.logout();
+      await _profileService.logout();   // clear tokens / session in your service
       if (!mounted) return;
-      // Navigate to login screen — replace route path as needed
-      Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
+      await widget.onLogout();          // ← notifies AuthState → AuthWrapper rebuilds
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
