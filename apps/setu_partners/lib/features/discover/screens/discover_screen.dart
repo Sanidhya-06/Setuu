@@ -46,6 +46,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     super.dispose();
   }
 
+  // ── Campaign Detail Bottom Sheet ─────────────────────────────────────────
   void _showCampaignDetail(Campaign campaign) {
     showModalBottomSheet(
       context: context,
@@ -55,120 +56,213 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         expand: false,
         initialChildSize: 0.7,
         maxChildSize: 0.95,
-        builder: (_, scrollController) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: SingleChildScrollView(
-            controller: scrollController,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    margin: const EdgeInsets.only(top: 12),
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE0E0E0),
-                      borderRadius: BorderRadius.circular(2),
+        builder: (_, scrollController) => StatefulBuilder(
+          // StatefulBuilder lets us update the button inside the sheet
+          builder: (sheetContext, setSheetState) {
+            final applied = _controller.hasApplied(campaign.id);
+            final applying = _controller.isApplying(campaign.id);
+
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: SingleChildScrollView(
+                controller: scrollController,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Drag handle
+                    Center(
+                      child: Container(
+                        margin: const EdgeInsets.only(top: 12),
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE0E0E0),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: SizedBox(
-                      height: 200,
-                      width: double.infinity,
-                      child: campaign.imageUrl.isNotEmpty
-                          ? Image.network(campaign.imageUrl, fit: BoxFit.cover)
-                          : Container(color: const Color(0xFFEEEBFF)),
+                    // Hero image
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: SizedBox(
+                          height: 200,
+                          width: double.infinity,
+                          child: campaign.imageUrl.isNotEmpty
+                              ? Image.network(campaign.imageUrl,
+                                  fit: BoxFit.cover)
+                              : Container(color: const Color(0xFFEEEBFF)),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (campaign.badge.isNotEmpty)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: campaign.badgeColor,
-                            borderRadius: BorderRadius.circular(20),
+                    // Details
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Badge
+                          if (campaign.badge.isNotEmpty)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: campaign.badgeColor,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                campaign.badge,
+                                style: const TextStyle(
+                                    fontFamily: 'Rubik',
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white),
+                              ),
+                            ),
+                          const SizedBox(height: 10),
+                          // Title
+                          Text(
+                            campaign.title,
+                            style: const TextStyle(
+                              fontFamily: 'Rubik',
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1C1C1C),
+                            ),
                           ),
-                          child: Text(campaign.badge,
-                              style: const TextStyle(
-                                  fontFamily: 'Rubik',
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white)),
-                        ),
-                      const SizedBox(height: 10),
-                      Text(
-                        campaign.title,
-                        style: const TextStyle(
-                          fontFamily: 'Rubik',
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1C1C1C),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        campaign.description,
-                        style: const TextStyle(
-                          fontFamily: 'Rubik',
-                          fontSize: 14,
-                          color: Color(0xFF6B6B6B),
-                          height: 1.6,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      _detailRow(Icons.location_on_outlined, campaign.location),
-                      const SizedBox(height: 6),
-                      _detailRow(Icons.calendar_today_outlined, campaign.date),
-                      const SizedBox(height: 6),
-                      _detailRow(Icons.category_outlined, campaign.category),
-                      const SizedBox(height: 6),
-                      _detailRow(Icons.group_outlined,
-                          '${campaign.joinedCount} volunteers joined'),
-                      const SizedBox(height: 28),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: ElevatedButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF5A4EFF),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14)),
+                          const SizedBox(height: 8),
+                          // Description
+                          Text(
+                            campaign.description,
+                            style: const TextStyle(
+                              fontFamily: 'Rubik',
+                              fontSize: 14,
+                              color: Color(0xFF6B6B6B),
+                              height: 1.6,
+                            ),
                           ),
-                          child: const Text('Apply Now',
-                              style: TextStyle(
-                                  fontFamily: 'Rubik',
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600)),
-                        ),
+                          const SizedBox(height: 14),
+                          _detailRow(
+                              Icons.location_on_outlined, campaign.location),
+                          const SizedBox(height: 6),
+                          _detailRow(
+                              Icons.calendar_today_outlined, campaign.date),
+                          const SizedBox(height: 6),
+                          _detailRow(
+                              Icons.category_outlined, campaign.category),
+                          const SizedBox(height: 6),
+                          // Live volunteer count
+                          AnimatedBuilder(
+                            animation: _controller,
+                            builder: (_, __) {
+                              final current = _controller.filteredCampaigns
+                                  .firstWhere((c) => c.id == campaign.id,
+                                      orElse: () => campaign)
+                                  .joinedCount;
+                              return _detailRow(Icons.group_outlined,
+                                  '$current volunteers joined');
+                            },
+                          ),
+                          const SizedBox(height: 28),
+                          // Apply Now button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: ElevatedButton(
+                              onPressed: applied || applying
+                                  ? null
+                                  : () async {
+                                      final error = await _controller
+                                          .applyToCampaign(campaign.id);
+
+                                      // Refresh button state inside sheet
+                                      setSheetState(() {});
+
+                                      if (!mounted) return;
+
+                                      if (error == null) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                            content:
+                                                Text('🎉 Applied successfully!'),
+                                            backgroundColor: Color(0xFF22C55E),
+                                          ),
+                                        );
+                                        Navigator.pop(context);
+                                      } else if (error == 'already_applied') {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                                'You have already applied to this campaign.'),
+                                          ),
+                                        );
+                                      } else if (error == 'campaign_full') {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                                'Sorry, this campaign is full.'),
+                                            backgroundColor: Color(0xFFEF4444),
+                                          ),
+                                        );
+                                      } else {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(content: Text(error)),
+                                        );
+                                      }
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: applied
+                                    ? const Color(0xFF22C55E)
+                                    : const Color(0xFF5A4EFF),
+                                foregroundColor: Colors.white,
+                                disabledBackgroundColor: applied
+                                    ? const Color(0xFF22C55E)
+                                    : const Color(0xFFD1D5DB),
+                                disabledForegroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14)),
+                              ),
+                              child: applying
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Text(
+                                      applied ? '✓ Applied' : 'Apply Now',
+                                      style: const TextStyle(
+                                          fontFamily: 'Rubik',
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
+  // ── Event Detail Bottom Sheet ────────────────────────────────────────────
   void _showEventDetail(UpcomingEvent event) {
     showModalBottomSheet(
       context: context,
@@ -233,6 +327,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     );
   }
 
+  // ── Shared detail row widget ─────────────────────────────────────────────
   Widget _detailRow(IconData icon, String text) {
     return Row(
       children: [
@@ -249,6 +344,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     );
   }
 
+  // ── State Picker Bottom Sheet ────────────────────────────────────────────
   void _showStatePicker() {
     showModalBottomSheet(
       context: context,
@@ -270,8 +366,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             ListTile(
               leading:
                   const Icon(Icons.public_rounded, color: Color(0xFF5A4EFF)),
-              title:
-                  const Text('All States', style: TextStyle(fontFamily: 'Rubik')),
+              title: const Text('All States',
+                  style: TextStyle(fontFamily: 'Rubik')),
               trailing: _controller.selectedState == 'All'
                   ? const Icon(Icons.check_rounded, color: Color(0xFF5A4EFF))
                   : null,
@@ -291,7 +387,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         : Container(color: const Color(0xFFEEEBFF)),
                   ),
                 ),
-                title: Text(s.name, style: const TextStyle(fontFamily: 'Rubik')),
+                title:
+                    Text(s.name, style: const TextStyle(fontFamily: 'Rubik')),
                 trailing: _controller.selectedState == s.name
                     ? const Icon(Icons.check_rounded, color: Color(0xFF5A4EFF))
                     : null,
@@ -307,6 +404,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     );
   }
 
+  // ── Build ────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -317,7 +415,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           body: SafeArea(
             child: CustomScrollView(
               slivers: [
-                // ── Location + Search ──────────────────────────────────────
+                // ── Location + Search ────────────────────────────────────
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -438,7 +536,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   ),
                 ),
 
-                // ── Explore by State ───────────────────────────────────────
+                // ── Explore by State ─────────────────────────────────────
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
@@ -536,7 +634,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         ),
                 ),
 
-                // ── Popular Opportunities ──────────────────────────────────
+                // ── Popular Opportunities ────────────────────────────────
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
@@ -582,6 +680,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   ),
                 ),
 
+                // ── Campaign Grid ────────────────────────────────────────
                 if (_controller.loadingCampaigns)
                   const SliverToBoxAdapter(
                     child: SizedBox(
@@ -657,12 +756,14 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         crossAxisCount: 2,
                         crossAxisSpacing: 12,
                         mainAxisSpacing: 12,
-                        childAspectRatio: 0.62,
+                        // ✅ FIXED: increased from 0.62 to 0.72 to prevent
+                        //    bottom overflow on cards with longer text
+                        childAspectRatio: 0.72,
                       ),
                     ),
                   ),
 
-                // ── Upcoming Events ────────────────────────────────────────
+                // ── Upcoming Events ──────────────────────────────────────
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
@@ -742,7 +843,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   Widget _stateIconFallback() {
     return Container(
       color: const Color(0xFFEEEBFF),
-      child: const Icon(Icons.location_city_rounded, color: Color(0xFF5A4EFF)),
+      child:
+          const Icon(Icons.location_city_rounded, color: Color(0xFF5A4EFF)),
     );
   }
 }

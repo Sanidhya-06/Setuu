@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 // ── Data Models ───────────────────────────────────────────────────────────────
 
@@ -125,7 +126,13 @@ class DiscoverController extends ChangeNotifier {
   String _selectedState = 'All';
   String _searchQuery = '';
   String _selectedFilter = 'All';
-  final Set<String> _savedCampaigns = {};
+  final Set<String> _savedIds = {};
+
+  // ✅ Track which campaigns the current user has applied to
+  final Set<String> _appliedCampaignIds = {};
+
+  // ✅ Track in-progress apply calls to prevent double taps
+  final Set<String> _applyingIds = {};
 
   bool _loadingCampaigns = false;
   bool _loadingEvents = false;
@@ -149,7 +156,11 @@ class DiscoverController extends ChangeNotifier {
   String? get eventsError => _eventsError;
   List<StateItem> get states => _states;
   List<UpcomingEvent> get events => _events;
-  bool isSaved(String id) => _savedCampaigns.contains(id);
+  bool isSaved(String id) => _savedIds.contains(id);
+
+  // ✅ New getters for apply state
+  bool hasApplied(String campaignId) => _appliedCampaignIds.contains(campaignId);
+  bool isApplying(String campaignId) => _applyingIds.contains(campaignId);
 
   final List<String> filterChips = [
     'All',
@@ -186,6 +197,9 @@ class DiscoverController extends ChangeNotifier {
           .orderBy('joinedCount', descending: true)
           .get();
       _campaigns = snap.docs.map((d) => Campaign.fromFirestore(d)).toList();
+
+      // ✅ After fetching campaigns, load which ones the user already applied to
+      await _loadAppliedCampaigns();
     } catch (e) {
       _campaignsError = 'Failed to load campaigns. Please try again.';
     } finally {
@@ -222,7 +236,7 @@ class DiscoverController extends ChangeNotifier {
       final snap = await _db.collection('states').get();
       _states = snap.docs.map((d) => StateItem.fromFirestore(d)).toList();
     } catch (e) {
-      // silently fail, show empty
+      // silently fail
     } finally {
       _loadingStates = false;
       notifyListeners();
@@ -231,6 +245,107 @@ class DiscoverController extends ChangeNotifier {
 
   Future<void> fetchAll() async {
     await Future.wait([fetchCampaigns(), fetchEvents(), fetchStates()]);
+  }
+
+  // ✅ Load campaigns the current user has already applied to
+  Future<void> _loadAppliedCampaigns() async {
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) return;
+
+      final snap = await _db
+          .collection('applications')
+          .where('userId', isEqualTo: uid)
+          .get();
+
+      _appliedCampaignIds.clear();
+      for (final doc in snap.docs) {
+        final campaignId = doc.data()['campaignId'] as String?;
+        if (campaignId != null) _appliedCampaignIds.add(campaignId);
+      }
+    } catch (e) {
+      debugPrint('_loadAppliedCampaigns error: $e');
+    }
+  }
+
+  // ✅ Apply to a campaign — returns an error string or null on success
+  Future<String?> applyToCampaign(String campaignId) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return 'You must be logged in to apply.';
+
+    if (_appliedCampaignIds.contains(campaignId)) {
+      return 'already_applied'; // special sentinel
+    }
+
+    if (_applyingIds.contains(campaignId)) return null; // debounce
+
+    _applyingIds.add(campaignId);
+    notifyListeners();
+
+    try {
+      final campaignRef = _db.collection('campaigns').doc(campaignId);
+
+      // ✅ Run as a transaction so joinedCount is always accurate
+      await _db.runTransaction((txn) async {
+        final snap = await txn.get(campaignRef);
+        if (!snap.exists) throw Exception('Campaign not found');
+
+        final data = snap.data() as Map<String, dynamic>;
+        final currentCount = data['joinedCount'] as int? ?? 0;
+        final maxVolunteers = data['maxVolunteers'] as int? ?? 9999;
+
+        if (currentCount >= maxVolunteers) {
+          throw Exception('campaign_full');
+        }
+
+        // Write application record
+        final appRef = _db.collection('applications').doc();
+        txn.set(appRef, {
+          'userId': uid,
+          'campaignId': campaignId,
+          'appliedAt': FieldValue.serverTimestamp(),
+          'status': 'pending',
+        });
+
+        // Increment joinedCount atomically
+        txn.update(campaignRef, {
+          'joinedCount': FieldValue.increment(1),
+        });
+      });
+
+      // ✅ Update local state optimistically
+      _appliedCampaignIds.add(campaignId);
+      _campaigns = _campaigns.map((c) {
+        if (c.id == campaignId) {
+          return Campaign(
+            id: c.id,
+            title: c.title,
+            description: c.description,
+            location: c.location,
+            state: c.state,
+            date: c.date,
+            imageUrl: c.imageUrl,
+            badge: c.badge,
+            badgeColor: c.badgeColor,
+            joinedCount: c.joinedCount + 1,
+            volunteerAvatars: c.volunteerAvatars,
+            category: c.category,
+          );
+        }
+        return c;
+      }).toList();
+
+      return null; // success
+
+    } catch (e) {
+      final msg = e.toString();
+      if (msg.contains('campaign_full')) return 'campaign_full';
+      debugPrint('applyToCampaign error: $e');
+      return 'Something went wrong. Please try again.';
+    } finally {
+      _applyingIds.remove(campaignId);
+      notifyListeners();
+    }
   }
 
   // ── Actions ────────────────────────────────────────────────────────────────
@@ -251,10 +366,10 @@ class DiscoverController extends ChangeNotifier {
   }
 
   void toggleSave(String id) {
-    if (_savedCampaigns.contains(id)) {
-      _savedCampaigns.remove(id);
+    if (_savedIds.contains(id)) {
+      _savedIds.remove(id);
     } else {
-      _savedCampaigns.add(id);
+      _savedIds.add(id);
     }
     notifyListeners();
   }
