@@ -29,14 +29,17 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
-    if (!_formKey.currentState!.validate()) return;
+  if (!_formKey.currentState!.validate()) return;
 
-    final success = await _controller.login();
+  final success = await _controller.login();
 
-    if (success && mounted) {
-      await authState.login();
-    }
+  if (success && mounted) {
+    await authState.login();
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {

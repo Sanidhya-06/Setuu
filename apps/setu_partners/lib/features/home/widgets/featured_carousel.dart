@@ -28,7 +28,7 @@ class _FeaturedCarouselState extends State<FeaturedCarousel> {
   @override
   Widget build(BuildContext context) {
     if (widget.isLoading) return _buildSkeleton();
-    if (widget.campaigns.isEmpty) return const SizedBox.shrink();
+    if (widget.campaigns.isEmpty) return _buildEmptyState();
 
     return Column(
       children: [
@@ -68,6 +68,35 @@ class _FeaturedCarouselState extends State<FeaturedCarousel> {
       ],
     );
   }
+
+  Widget _buildEmptyState() {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    child: Container(
+      height: 160,
+      decoration: BoxDecoration(
+        color: const Color(0xFFEEEBFF),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.campaign_outlined, size: 36, color: Color(0xFF6B4EFF)),
+            SizedBox(height: 8),
+            Text(
+              'No featured campaigns yet',
+              style: TextStyle(
+                color: Color(0xFF6B4EFF),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
 
   Widget _buildSkeleton() {
     return Padding(
