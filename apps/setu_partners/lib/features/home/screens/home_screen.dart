@@ -194,7 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _openProfile() {
   Navigator.push(
     context,
-    MaterialPageRoute(builder: (_) => const ProfilePage()),
+    MaterialPageRoute(builder: (_) => const ProfileScreen()),
   );
 }
 
@@ -220,7 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 3:
         return const HeatmapScreen();
       case 4:
-        return const ProfilePage();
+        return const ProfileScreen();
       default:
         return _buildHomeContent();
     }
