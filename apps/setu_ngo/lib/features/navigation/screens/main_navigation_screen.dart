@@ -1,35 +1,24 @@
-// apps/setu_ngo/lib/features/navigation/screens/main_navigation_screen.dart
-//
-// Drop-in replacement for whatever widget you currently set as `home:` in
-// MaterialApp.  It owns the bottom nav bar and swaps screens via IndexedStack
-// so each tab keeps its own state (scroll position, loaded data, etc.)
+// features/navigation/screens/main_navigation_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../dashboard/screens/dashboard_screen.dart';
+
+import '../../dashboard/presentation/dashboard/dashboard_screen.dart';
 import '../../campaigns/screens/campaign_list.dart';
 import '../../data/screens/data_screen.dart';
+import '../../forms/screens/forms_list.dart';
+import '../../profile/screens/ngo_profile.dart';
 
-// ── Import your real screen files here ───────────────────────────────────────
-// Replace these placeholder imports with your actual feature screens:
-//
-// import '../../dashboard/screens/dashboard_screen.dart';
-// import '../../campaigns/screens/campaigns_screen.dart';
-// import '../../data/screens/data_screen.dart';
-// import '../../forms/screens/forms_screen.dart';
- import '../../profile/screens/ngo_profile.dart';
-
-// ── Colour tokens (keep in sync with the rest of your app) ───────────────────
-const kPrimary   = Color(0xFF6C5CE7);
-const kBg        = Color(0xFFF5F5FA);
-const kTextDark  = Color(0xFF1A1A2E);
-const kTextGrey  = Color(0xFF9E9E9E);
-const kNavBg     = Colors.white;
+// ── Colour tokens ─────────────────────────────────────────────────────────────
+const kPrimary  = Color(0xFF6C5CE7);
+const kBg       = Color(0xFFF5F5FA);
+const kTextDark = Color(0xFF1A1A2E);
+const kTextGrey = Color(0xFF9E9E9E);
 
 
-// ═════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
 // MainNavigationScreen
-// ═════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -38,102 +27,129 @@ class MainNavigationScreen extends StatefulWidget {
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen>
-    with SingleTickerProviderStateMixin {
-
+class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
 
-  // ── Tab config ──────────────────────────────────────────────────────────────
-  static const _tabs = [
-    _TabItem(icon: Icons.home_rounded,          label: 'Dashboard'),
-    _TabItem(icon: Icons.campaign_rounded,       label: 'Campaigns'),
-    _TabItem(icon: Icons.cloud_upload_rounded,   label: 'Data'),
-    _TabItem(icon: Icons.assignment_rounded,     label: 'Forms'),
-    _TabItem(icon: Icons.person_rounded,         label: 'Profile'),
-  ];
-
-  // ── Screens — replace placeholders with your real screens ──────────────────
-  static const _screens = [
-    DashboardScreen(),       // tab 0
-    CampaignsScreen(),       // tab 1
-    DataScreen(),            // tab 2
-    FormsScreen(),           // tab 3
-    ProfileScreen(),         // tab 4
-  ];
-
-  void _onTabTapped(int index) {
+  /// Exposed so child screens can jump to a tab without go_router.
+  void switchTab(int index) {
     if (index == _currentIndex) return;
     HapticFeedback.selectionClick();
     setState(() => _currentIndex = index);
   }
 
+  /// Screens are built lazily here so we can pass [switchTab] to the
+  /// dashboard without needing a router or InheritedWidget.
+  late final List<Widget> _screens = [
+    DashboardScreen(onTabSwitch: switchTab), // tab 0
+    const CampaignListScreen(),              // tab 1
+    const DataScreen(),                      // tab 2
+    const FormsListScreen(),                 // tab 3
+    const NgoProfileScreen(),               // tab 4
+  ];
+
+  static const _navItems = [
+    _NavItemData(icon: Icons.home_rounded,         activeIcon: Icons.home_rounded,         label: 'Dashboard'),
+    _NavItemData(icon: Icons.campaign_outlined,    activeIcon: Icons.campaign_rounded,     label: 'Campaigns'),
+    _NavItemData(icon: Icons.cloud_upload_outlined,activeIcon: Icons.cloud_upload_rounded, label: 'Data'),
+    _NavItemData(icon: Icons.assignment_outlined,  activeIcon: Icons.assignment_rounded,   label: 'Forms'),
+    _NavItemData(icon: Icons.person_outline,       activeIcon: Icons.person_rounded,       label: 'Profile'),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBg,
-
-      // ── IndexedStack keeps every tab alive (preserves scroll / state) ──────
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
-
-      // ── Bottom Navigation Bar ───────────────────────────────────────────────
-      bottomNavigationBar: _BottomNavBar(
+      // IndexedStack keeps all tabs alive — state is preserved when switching
+      body: IndexedStack(index: _currentIndex, children: _screens),
+      bottomNavigationBar: _CustomBottomNav(
         currentIndex: _currentIndex,
-        tabs: _tabs,
-        onTap: _onTabTapped,
+        items: _navItems,
+        onTap: switchTab,
       ),
     );
   }
 }
 
 
-// ═════════════════════════════════════════════════════════════════════════════
-// _BottomNavBar  — custom pill-style bottom nav matching the screenshot design
-// ═════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
+// Custom Bottom Nav Bar
+// ═══════════════════════════════════════════════════════════════════════════════
 
-class _BottomNavBar extends StatelessWidget {
+class _CustomBottomNav extends StatelessWidget {
   final int currentIndex;
-  final List<_TabItem> tabs;
+  final List<_NavItemData> items;
   final ValueChanged<int> onTap;
 
-  const _BottomNavBar({
+  const _CustomBottomNav({
     required this.currentIndex,
-    required this.tabs,
+    required this.items,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-
     return Container(
       decoration: const BoxDecoration(
-        color: kNavBg,
-        border: Border(top: BorderSide(color: Color(0xFFEEEEEE), width: 1)),
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFEEEEEE))),
         boxShadow: [
-          BoxShadow(
-            color: Color(0x0A000000),
-            blurRadius: 16,
-            offset: Offset(0, -4),
-          ),
+          BoxShadow(color: Color(0x0D000000), blurRadius: 20, offset: Offset(0, -4)),
         ],
       ),
       child: SafeArea(
         top: false,
-        child: Padding(
-          padding: EdgeInsets.only(
-            top: 8,
-            bottom: bottomPadding > 0 ? 0 : 8,
-          ),
+        child: SizedBox(
+          height: 60,
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(tabs.length, (i) => _NavItem(
-              tab: tabs[i],
-              isSelected: i == currentIndex,
-              onTap: () => onTap(i),
-            )),
+            children: List.generate(items.length, (i) {
+              final selected = i == currentIndex;
+              final item = items[i];
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => onTap(i),
+                  behavior: HitTestBehavior.opaque,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOut,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOut,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? kPrimary.withOpacity(0.12)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Icon(
+                            selected ? item.activeIcon : item.icon,
+                            size: 22,
+                            color: selected ? kPrimary : kTextGrey,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 200),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: selected
+                                ? FontWeight.w700
+                                : FontWeight.w400,
+                            color: selected ? kPrimary : kTextGrey,
+                          ),
+                          child: Text(item.label),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
           ),
         ),
       ),
@@ -141,139 +157,10 @@ class _BottomNavBar extends StatelessWidget {
   }
 }
 
-
-// ─── Single nav item with animated pill indicator ────────────────────────────
-
-class _NavItem extends StatelessWidget {
-  final _TabItem tab;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _NavItem({
-    required this.tab,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? kPrimary.withOpacity(0.10) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: Icon(
-                tab.icon,
-                key: ValueKey(isSelected),
-                size: 24,
-                color: isSelected ? kPrimary : kTextGrey,
-              ),
-            ),
-            const SizedBox(height: 3),
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 200),
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? kPrimary : kTextGrey,
-              ),
-              child: Text(tab.label),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-
-// ─── Tab descriptor ──────────────────────────────────────────────────────────
-
-class _TabItem {
+class _NavItemData {
   final IconData icon;
+  final IconData activeIcon;
   final String label;
-  const _TabItem({required this.icon, required this.label});
-}
-
-
-// ═════════════════════════════════════════════════════════════════════════════
-// ── PLACEHOLDER SCREENS ──────────────────────────────────────────────────────
-// Delete these once you point the _screens list at your real feature screens.
-// ═════════════════════════════════════════════════════════════════════════════
-
-// ignore: must_be_immutable — placeholder only
-class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
-  @override
-  Widget build(BuildContext context) =>
-      _PlaceholderScreen(label: 'Dashboard', icon: Icons.home_rounded, color: kPrimary);
-}
-
-class CampaignsScreen extends StatelessWidget {
-  const CampaignsScreen({super.key});
-  @override
-  Widget build(BuildContext context) =>
-      _PlaceholderScreen(label: 'Campaigns', icon: Icons.campaign_rounded, color: const Color(0xFF00B894));
-}
-
-class DataScreen extends StatelessWidget {
-  const DataScreen({super.key});
-  @override
-  Widget build(BuildContext context) =>
-      _PlaceholderScreen(label: 'Data', icon: Icons.cloud_upload_rounded, color: const Color(0xFF0984E3));
-}
-
-class FormsScreen extends StatelessWidget {
-  const FormsScreen({super.key});
-  @override
-  Widget build(BuildContext context) =>
-      _PlaceholderScreen(label: 'Forms', icon: Icons.assignment_rounded, color: const Color(0xFFE17055));
-}
-
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
-  @override
-  Widget build(BuildContext context) =>
-      _PlaceholderScreen(label: 'Profile', icon: Icons.person_rounded, color: const Color(0xFF6C5CE7));
-}
-
-class _PlaceholderScreen extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  const _PlaceholderScreen({required this.label, required this.icon, required this.color});
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: kBg,
-    body: Center(
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Container(
-          width: 72, height: 72,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.12),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: color, size: 36),
-        ),
-        const SizedBox(height: 16),
-        Text(label,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: kTextDark)),
-        const SizedBox(height: 6),
-        Text('$label screen — replace with your real widget',
-          style: const TextStyle(fontSize: 13, color: kTextGrey)),
-      ]),
-    ),
-  );
+  const _NavItemData(
+      {required this.icon, required this.activeIcon, required this.label});
 }

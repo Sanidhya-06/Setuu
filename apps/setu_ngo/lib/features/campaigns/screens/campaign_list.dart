@@ -3,6 +3,7 @@ import '../campaign_controller.dart';
 import '../widgets/campaign_card.dart';
 import 'create_campaign.dart';
 import 'campaign_details.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CampaignListScreen extends StatefulWidget {
   const CampaignListScreen({super.key});
@@ -127,28 +128,37 @@ class _CampaignListScreenState extends State<CampaignListScreen>
   }
 
   void _confirmDelete(Campaign campaign) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Delete Campaign?',
-            style:
-                TextStyle(fontFamily: 'Rubik', fontWeight: FontWeight.w700)),
-        content: const Text(
-            'This will permanently remove the campaign. This action cannot be undone.',
-            style:
-                TextStyle(fontFamily: 'Rubik', color: Color(0xFF6B6B6B))),
-        actions: [
+  final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+  final isOwner = campaign.organizerId == currentUserId;
+
+  showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: const Text(
+        'Delete Campaign?',
+        style:
+            TextStyle(fontFamily: 'Rubik', fontWeight: FontWeight.w700),
+      ),
+      content: Text(
+        isOwner
+            ? 'This will permanently remove the campaign. This action cannot be undone.'
+            : 'You are not allowed to delete this campaign.',
+        style: const TextStyle(
+            fontFamily: 'Rubik', color: Color(0xFF6B6B6B)),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel',
+              style: TextStyle(
+                  fontFamily: 'Rubik', color: Color(0xFF6B6B6B))),
+        ),
+        if (isOwner)
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel',
-                style: TextStyle(
-                    fontFamily: 'Rubik', color: Color(0xFF6B6B6B))),
-          ),
-          TextButton(
-            onPressed: () {
-              _controller.deleteCampaign(campaign.id);
+            onPressed: () async {
+              await _controller.deleteCampaign(campaign.id);
               Navigator.pop(context);
             },
             child: const Text('Delete',
@@ -157,10 +167,10 @@ class _CampaignListScreenState extends State<CampaignListScreen>
                     color: Colors.redAccent,
                     fontWeight: FontWeight.w600)),
           ),
-        ],
-      ),
-    );
-  }
+      ],
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {

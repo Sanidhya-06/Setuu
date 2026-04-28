@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 
-class DataScreen extends StatelessWidget {
-  const DataScreen({super.key});
+class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Data'),
+        title: const Text('Settings'),
+        centerTitle: true,
       ),
       body: const Center(
         child: Text(
-          'Data Screen Coming Soon',
+          'Settings Under Work 📊',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w500,

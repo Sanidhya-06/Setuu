@@ -160,7 +160,7 @@ class CampaignController extends ChangeNotifier {
 
       final snap = await _db
           .collection('campaigns')
-          .where('ngoId', isEqualTo: uid)
+          .where('organizerId', isEqualTo: uid)
           .orderBy('createdAt', descending: true)
           .get();
 
@@ -181,7 +181,7 @@ class CampaignController extends ChangeNotifier {
 
       await _db.collection('campaigns').add({
         ...campaign.toFirestore(),
-        'ngoId': uid, // 🔥 critical
+        'organizerId': FirebaseAuth.instance.currentUser!.uid, // 🔥 critical
       });
 
       await NgoStatsService().updateStats(uid);

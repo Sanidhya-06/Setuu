@@ -23,32 +23,33 @@ class _ProfileHeaderWidgetState extends State<ProfileHeaderWidget> {
   bool _isUploadingImage = false;
 
   Future<void> _pickAndUploadImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 80,
-    );
+  final picker = ImagePicker();
+  final pickedFile = await picker.pickImage(
+    source: ImageSource.gallery,
+    imageQuality: 80,
+  );
 
-    if (pickedFile == null) return;
+  if (pickedFile == null) return;
 
-    setState(() => _isUploadingImage = true);
+  setState(() => _isUploadingImage = true);
 
-    try {
-      await _profileService.uploadProfileImage(File(pickedFile.path));
-      widget.onImageUpdated();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to upload image: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isUploadingImage = false);
+  try {
+    // Store the local file path as the image URL for now
+    await _profileService.updateProfileImage(pickedFile.path);
+    widget.onImageUpdated();
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update image: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
+  } finally {
+    if (mounted) setState(() => _isUploadingImage = false);
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -84,20 +85,25 @@ class _ProfileHeaderWidgetState extends State<ProfileHeaderWidget> {
                 ),
                 child: ClipOval(
                   child: _isUploadingImage
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                            color: Color(0xFF6B5ECD),
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : widget.profile.profileImageUrl != null
-                          ? Image.network(
-                              widget.profile.profileImageUrl!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  _buildDefaultAvatar(),
-                            )
-                          : _buildDefaultAvatar(),
+    ? const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFF6B5ECD),
+          strokeWidth: 2,
+        ),
+      )
+    : widget.profile.profileImageUrl != null
+        ? widget.profile.profileImageUrl!.startsWith('http')
+            ? Image.network(
+                widget.profile.profileImageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
+              )
+            : Image.file(
+                File(widget.profile.profileImageUrl!),
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
+              )
+        : _buildDefaultAvatar(),
                 ),
               ),
               Positioned(

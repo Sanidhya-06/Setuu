@@ -1,71 +1,44 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/ngo_profile_model.dart';
 
 class ProfileService {
-  static const String _baseUrl = 'https://your-api-base-url.com/api'; // Replace with your API base URL
-
-  Future<String?> _getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('auth_token');
-  }
+  final _db = FirebaseFirestore.instance;
+  final _auth = FirebaseAuth.instance;
 
   Future<NgoProfile> fetchProfile() async {
-    final token = await _getToken();
-    final response = await http.get(
-      Uri.parse('$_baseUrl/ngo/profile'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) throw Exception('Not logged in');
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return NgoProfile.fromJson(data);
-    } else {
-      throw Exception('Failed to fetch profile: ${response.statusCode}');
-    }
+    final snap = await _db
+        .collection('ngo_registrations')
+        .where('uid', isEqualTo: uid)
+        .limit(1)
+        .get();
+
+    if (snap.docs.isEmpty) throw Exception('Profile not found');
+
+    return NgoProfile.fromJson(snap.docs.first.data());
   }
 
-  Future<String> uploadProfileImage(File imageFile) async {
-    final token = await _getToken();
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse('$_baseUrl/ngo/profile/image'),
-    );
+  Future<void> updateProfileImage(String imageUrl) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) throw Exception('Not logged in');
 
-    request.headers['Authorization'] = 'Bearer $token';
-    request.files.add(
-      await http.MultipartFile.fromPath('profile_image', imageFile.path),
-    );
+    final snap = await _db
+        .collection('ngo_registrations')
+        .where('uid', isEqualTo: uid)
+        .limit(1)
+        .get();
 
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
+    if (snap.docs.isEmpty) throw Exception('Profile not found');
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return data['profile_image_url'];
-    } else {
-      throw Exception('Failed to upload image: ${response.statusCode}');
-    }
+    await snap.docs.first.reference.update({
+      'profileImageUrl': imageUrl,
+    });
   }
 
   Future<void> logout() async {
-    final token = await _getToken();
-    try {
-      await http.post(
-        Uri.parse('$_baseUrl/auth/logout'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-    } finally {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
-    }
+    await _auth.signOut();
   }
 }

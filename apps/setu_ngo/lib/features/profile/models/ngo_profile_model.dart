@@ -20,17 +20,23 @@ class NgoProfile {
   });
 
   factory NgoProfile.fromJson(Map<String, dynamic> json) {
+    final address = json['address'] ?? '';
+    final city = json['city'] ?? '';
+    final state = json['state'] ?? '';
+
+    String location = [address, city, state]
+        .where((s) => s.toString().isNotEmpty)
+        .join(', ');
+
     return NgoProfile(
-      id: json['id'] ?? '',
-      name: json['name'] ?? '',
+      id: json['uid'] ?? '',
+      name: json['ngoName'] ?? '',
       email: json['email'] ?? '',
       website: json['website'] ?? '',
-      location: json['location'] ?? '',
-      profileImageUrl: json['profile_image_url'],
-      isVerified: json['is_verified'] ?? false,
-      organizationInfo: OrganizationInfo.fromJson(
-        json['organization_info'] ?? {},
-      ),
+      location: location,
+      profileImageUrl: json['profileImageUrl'],
+      isVerified: json['registrationStatus'] == 'approved',
+      organizationInfo: OrganizationInfo.fromJson(json),
     );
   }
 }
@@ -41,6 +47,9 @@ class OrganizationInfo {
   final String organizationType;
   final String description;
   final String taxExemptionStatus;
+  final String phoneNumber;
+  final String pincode;
+  final String registrationStatus;
 
   OrganizationInfo({
     required this.registrationNumber,
@@ -48,15 +57,21 @@ class OrganizationInfo {
     required this.organizationType,
     required this.description,
     required this.taxExemptionStatus,
+    required this.phoneNumber,
+    required this.pincode,
+    required this.registrationStatus,
   });
 
   factory OrganizationInfo.fromJson(Map<String, dynamic> json) {
     return OrganizationInfo(
-      registrationNumber: json['registration_number'] ?? '',
-      establishedYear: json['established_year'] ?? '',
-      organizationType: json['organization_type'] ?? '',
+      registrationNumber: json['registrationNumber'] ?? '',
+      establishedYear: json['yearOfEstablishment'] ?? '',
+      organizationType: json['ngoType'] ?? '',
       description: json['description'] ?? '',
-      taxExemptionStatus: json['tax_exemption_status'] ?? '',
+      taxExemptionStatus: json['registrationStatus'] ?? '',
+      phoneNumber: json['phoneNumber'] ?? '',
+      pincode: json['pincode'] ?? '',
+      registrationStatus: json['registrationStatus'] ?? 'pending',
     );
   }
 }

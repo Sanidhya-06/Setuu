@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../campaign_controller.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CampaignDetailSheet extends StatelessWidget {
   final Campaign campaign;
@@ -233,38 +234,63 @@ class CampaignDetailSheet extends StatelessWidget {
   }
 
   void _confirmDelete(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Delete Campaign?',
-            style: TextStyle(
-                fontFamily: 'Rubik', fontWeight: FontWeight.w700)),
-        content: const Text(
-            'This action cannot be undone. The campaign will be permanently removed.',
-            style: TextStyle(fontFamily: 'Rubik', color: Color(0xFF6B6B6B))),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel',
-                style: TextStyle(
-                    fontFamily: 'Rubik', color: Color(0xFF6B6B6B))),
-          ),
-          TextButton(
-            onPressed: () {
-              controller.deleteCampaign(campaign.id);
-              Navigator.pop(context);
-            },
-            child: const Text('Delete',
-                style: TextStyle(
-                    fontFamily: 'Rubik',
-                    color: Colors.redAccent,
-                    fontWeight: FontWeight.w600)),
-          ),
-        ],
+  final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+  final isOwner = campaign.organizerId == currentUserId;
+
+  showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: const Text(
+        'Delete Campaign?',
+        style: TextStyle(fontFamily: 'Rubik', fontWeight: FontWeight.w700),
       ),
-    );
-  }
+      content: Text(
+        isOwner
+            ? 'This action cannot be undone. The campaign will be permanently removed.'
+            : 'You are not allowed to delete this campaign.',
+        style: const TextStyle(
+          fontFamily: 'Rubik',
+          color: Color(0xFF6B6B6B),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text(
+            'Cancel',
+            style: TextStyle(
+              fontFamily: 'Rubik',
+              color: Color(0xFF6B6B6B),
+            ),
+          ),
+        ),
+        if (isOwner)
+          TextButton(
+            onPressed: () async {
+              try {
+                await controller.deleteCampaign(campaign.id);
+                Navigator.pop(context);
+              } catch (e) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(e.toString())),
+                );
+              }
+            },
+            child: const Text(
+              'Delete',
+              style: TextStyle(
+                fontFamily: 'Rubik',
+                color: Colors.redAccent,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
+}
 
   Widget _row(IconData icon, String text) {
     return Row(

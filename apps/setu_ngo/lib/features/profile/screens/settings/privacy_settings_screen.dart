@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 
-class DataScreen extends StatelessWidget {
-  const DataScreen({super.key});
+class PrivacySettingsScreen extends StatelessWidget {
+  const PrivacySettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Data'),
+        title: const Text('Privacy Settings'),
+        centerTitle: true,
       ),
       body: const Center(
         child: Text(
-          'Data Screen Coming Soon',
+          'Privacy Settings Under Work 📊',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w500,

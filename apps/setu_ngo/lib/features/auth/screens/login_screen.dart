@@ -5,7 +5,7 @@ import '../widgets/input_field.dart';
 import '../widgets/auth_button.dart';
 import '../../dashboard/screens/dashboard_screen.dart';
 import 'package:provider/provider.dart';
-import '../../dashboard/dashboard_controller.dart';
+import '../../dashboard/core/dashboard_controller.dart';
 import '../../dashboard/screens/dashboard_screen.dart';
 
 
