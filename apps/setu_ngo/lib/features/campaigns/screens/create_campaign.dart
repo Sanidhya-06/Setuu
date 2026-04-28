@@ -120,8 +120,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
     }
   }
 
-  String _formatDate(DateTime d) =>
-      "${d.day}/${d.month}/${d.year}";
+  String _formatDate(DateTime d) => "${d.day}/${d.month}/${d.year}";
 
   String _formatTime(TimeOfDay t) =>
       "${t.hour}:${t.minute.toString().padLeft(2, '0')}";
@@ -154,19 +153,31 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
       organizerId: FirebaseAuth.instance.currentUser!.uid,
     );
 
-    final success = await widget.controller.createCampaign(campaign);
+    try {
+      final success = await widget.controller.createCampaign(campaign);
 
-    setState(() => _saving = false);
+      setState(() => _saving = false);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    if (success) {
-      Navigator.pop(context, true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Campaign created")),
-      );
-    } else {
-      _showError("Creation failed");
+      // ✅ Capture messenger BEFORE popping so context is still valid
+      final messenger = ScaffoldMessenger.of(context);
+
+      if (success) {
+        Navigator.pop(context, true);
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text("Campaign created successfully!"),
+            backgroundColor: Color(0xFF22C55E),
+          ),
+        );
+      } else {
+        _showError("Creation failed. Please try again.");
+      }
+    } catch (e) {
+      setState(() => _saving = false);
+      if (!mounted) return;
+      _showError("Error: ${e.toString()}");
     }
   }
 
@@ -186,29 +197,70 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
           children: [
             _field("Title", _titleCtrl),
             _field("Description", _descCtrl, maxLines: 3),
-            _field("Location", _locationCtrl,
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.my_location),
-                  onPressed: _pickCurrentLocation,
-                )),
+            _field(
+              "Location",
+              _locationCtrl,
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.my_location),
+                onPressed: _pickCurrentLocation,
+              ),
+            ),
             _field("State", _stateCtrl),
             _field("Image URL", _imageUrlCtrl),
             _field("Max Volunteers", _maxVolunteersCtrl),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
 
-            ElevatedButton(
-              onPressed: _pickDate,
-              child: Text(_selectedDate == null
-                  ? "Pick Date"
-                  : _formatDate(_selectedDate!)),
+            // ✅ Category dropdown (was missing from UI)
+            DropdownButtonFormField<String>(
+              value: _selectedCategory,
+              decoration: const InputDecoration(
+                labelText: 'Category',
+                border: OutlineInputBorder(),
+              ),
+              items: _categories
+                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                  .toList(),
+              onChanged: (v) => setState(() => _selectedCategory = v!),
             ),
 
-            ElevatedButton(
+            const SizedBox(height: 12),
+
+            // ✅ Status dropdown (was missing from UI)
+            DropdownButtonFormField<String>(
+              value: _selectedStatus,
+              decoration: const InputDecoration(
+                labelText: 'Status',
+                border: OutlineInputBorder(),
+              ),
+              items: _statuses
+                  .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                  .toList(),
+              onChanged: (v) => setState(() => _selectedStatus = v!),
+            ),
+
+            const SizedBox(height: 20),
+
+            ElevatedButton.icon(
+              onPressed: _pickDate,
+              icon: const Icon(Icons.calendar_today),
+              label: Text(
+                _selectedDate == null
+                    ? "Pick Date"
+                    : _formatDate(_selectedDate!),
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            ElevatedButton.icon(
               onPressed: _pickTime,
-              child: Text(_selectedTime == null
-                  ? "Pick Time"
-                  : _formatTime(_selectedTime!)),
+              icon: const Icon(Icons.access_time),
+              label: Text(
+                _selectedTime == null
+                    ? "Pick Time"
+                    : _formatTime(_selectedTime!),
+              ),
             ),
 
             const SizedBox(height: 20),
@@ -216,7 +268,11 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
             ElevatedButton(
               onPressed: _saving ? null : _submit,
               child: _saving
-                  ? const CircularProgressIndicator()
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : const Text("Create Campaign"),
             ),
           ],

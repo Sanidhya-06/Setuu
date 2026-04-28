@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../core/services/ngo_stats_service.dart'; 
+import '../../core/services/ngo_stats_service.dart';
 
 // ── Data Model ───────────────────────────────────────────────────────────────
 
@@ -107,7 +107,7 @@ class Campaign {
 class CampaignController extends ChangeNotifier {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // ── UI STATE ─────────────────────────────────────────────────────────────
+  // ── UI STATE ──────────────────────────────────────────────────────────────
 
   String _selectedTab = 'All Campaigns';
   String _searchQuery = '';
@@ -124,7 +124,7 @@ class CampaignController extends ChangeNotifier {
   String get searchQuery => _searchQuery;
   int get notificationCount => _notificationCount;
 
-  // ── DATA STATE ───────────────────────────────────────────────────────────
+  // ── DATA STATE ────────────────────────────────────────────────────────────
 
   List<Campaign> _campaigns = [];
   bool _loading = false;
@@ -134,7 +134,7 @@ class CampaignController extends ChangeNotifier {
   bool get loading => _loading;
   String? get error => _error;
 
-  // ── FILTERED LIST ────────────────────────────────────────────────────────
+  // ── FILTERED LIST ─────────────────────────────────────────────────────────
 
   List<Campaign> get filteredCampaigns {
     return _campaigns.where((c) {
@@ -149,7 +149,7 @@ class CampaignController extends ChangeNotifier {
     }).toList();
   }
 
-  // ── FETCH ────────────────────────────────────────────────────────────────
+  // ── FETCH ─────────────────────────────────────────────────────────────────
 
   Future<void> fetchCampaigns() async {
     _loading = true;
@@ -165,31 +165,51 @@ class CampaignController extends ChangeNotifier {
           .get();
 
       _campaigns = snap.docs.map((d) => Campaign.fromFirestore(d)).toList();
+      _error = null;
     } catch (e) {
       _error = 'Failed to load campaigns';
+      // ⚠️ If you see a "requires index" error in console, go to:
+      // Firebase Console → Firestore → Indexes → create composite index:
+      //   Collection: campaigns
+      //   Fields: organizerId (Ascending), createdAt (Descending)
+      debugPrint('fetchCampaigns error: $e');
     } finally {
       _loading = false;
       notifyListeners();
     }
   }
 
-  // ── CREATE ───────────────────────────────────────────────────────────────
+  // ── CREATE ────────────────────────────────────────────────────────────────
 
   Future<bool> createCampaign(Campaign campaign) async {
     try {
       final uid = FirebaseAuth.instance.currentUser!.uid;
 
+      // ✅ Step 1: Save to Firestore — this is the critical operation
       await _db.collection('campaigns').add({
         ...campaign.toFirestore(),
-        'organizerId': FirebaseAuth.instance.currentUser!.uid, // 🔥 critical
+        'organizerId': uid,
       });
 
-      await NgoStatsService().updateStats(uid);
-      await fetchCampaigns();
+      // ✅ Step 2: Update stats — failure here won't affect creation result
+      try {
+        await NgoStatsService().updateStats(uid);
+      } catch (e) {
+        debugPrint('Stats update error (non-fatal): $e');
+      }
 
-      return true;
+      // ✅ Step 3: Refresh list — failure here (e.g. missing index) won't
+      // affect creation result. List refreshes on next screen load.
+      try {
+        await fetchCampaigns();
+      } catch (e) {
+        debugPrint('fetchCampaigns after create error (non-fatal): $e');
+      }
+
+      return true; // ✅ True as long as the add() above succeeded
+
     } catch (e) {
-      print("Create error: $e");
+      debugPrint('createCampaign error: $e');
       return false;
     }
   }
@@ -209,16 +229,26 @@ class CampaignController extends ChangeNotifier {
 
       final uid = FirebaseAuth.instance.currentUser!.uid;
 
-      await NgoStatsService().updateStats(uid);
-      await fetchCampaigns();
+      try {
+        await NgoStatsService().updateStats(uid);
+      } catch (e) {
+        debugPrint('Stats update error (non-fatal): $e');
+      }
+
+      try {
+        await fetchCampaigns();
+      } catch (e) {
+        debugPrint('fetchCampaigns after update error (non-fatal): $e');
+      }
 
       return true;
     } catch (e) {
+      debugPrint('updateCampaignStatus error: $e');
       return false;
     }
   }
 
-  // ── DELETE ───────────────────────────────────────────────────────────────
+  // ── DELETE ────────────────────────────────────────────────────────────────
 
   Future<bool> deleteCampaign(String id) async {
     try {
@@ -226,16 +256,26 @@ class CampaignController extends ChangeNotifier {
 
       final uid = FirebaseAuth.instance.currentUser!.uid;
 
-      await NgoStatsService().updateStats(uid);
-      await fetchCampaigns();
+      try {
+        await NgoStatsService().updateStats(uid);
+      } catch (e) {
+        debugPrint('Stats update error (non-fatal): $e');
+      }
+
+      try {
+        await fetchCampaigns();
+      } catch (e) {
+        debugPrint('fetchCampaigns after delete error (non-fatal): $e');
+      }
 
       return true;
     } catch (e) {
+      debugPrint('deleteCampaign error: $e');
       return false;
     }
   }
 
-  // ── UI ACTIONS ───────────────────────────────────────────────────────────
+  // ── UI ACTIONS ────────────────────────────────────────────────────────────
 
   void setTab(String tab) {
     _selectedTab = tab;
