@@ -758,7 +758,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         mainAxisSpacing: 12,
                         // ✅ FIXED: increased from 0.62 to 0.72 to prevent
                         //    bottom overflow on cards with longer text
-                        childAspectRatio: 0.72,
+                        childAspectRatio: 0.58,
                       ),
                     ),
                   ),
